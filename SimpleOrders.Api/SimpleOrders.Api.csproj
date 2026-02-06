@@ -4,6 +4,12 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>SimpleOrders.Api</AssemblyName>
+        <RootNamespace>SimpleOrders.Api</RootNamespace>
+        <PackageId>SimpleOrders.Api</PackageId>
+        <Authors>SimpleOrders.Api</Authors>
+        <Company>SimpleOrders.Api</Company>
+        <Product>SimpleOrders.Api</Product>
     </PropertyGroup>
 
     <ItemGroup>

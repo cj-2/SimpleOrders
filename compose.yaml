@@ -1,0 +1,26 @@
+﻿services:
+  broker:
+    image: apache/kafka:latest
+    ports:
+      - 9092:9092
+  notify:
+    image: notify
+    build:
+      context: .
+      dockerfile: SimpleOrders.Notify/Dockerfile
+    depends_on:
+      - broker
+    environment:
+      - Kafka__BootstrapServer=broker:29092
+  api:
+    image: api
+    build:
+      context: .
+      dockerfile: SimpleOrders.Api/Dockerfile
+    ports:
+      - 25104:8080
+    depends_on:
+      - broker
+    environment:
+      - Kafka__BootstrapServer=broker:29092
+      - ASPNETCORE_ENVIRONMENT=Development

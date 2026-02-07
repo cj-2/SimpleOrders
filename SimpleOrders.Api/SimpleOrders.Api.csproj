@@ -10,10 +10,23 @@
         <Authors>SimpleOrders.Api</Authors>
         <Company>SimpleOrders.Api</Company>
         <Product>SimpleOrders.Api</Product>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Confluent.Kafka" Version="2.13.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2"/>
+        <PackageReference Include="Scalar.AspNetCore" Version="2.12.35" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SimpleOrders.Shared\SimpleOrders.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>

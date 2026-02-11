@@ -24,9 +24,7 @@ app.MapPost("/order", async (NotifyService notify, CreateOrderDto dto) =>
     {
         try
         {
-            var order = new Order(dto.Buyer, dto.Products, dto.BuyerEmail);
-            order.Id = Guid.NewGuid().ToString();
-            
+            var order = new Order(Guid.NewGuid().ToString(), dto.Buyer, dto.Products, dto.BuyerEmail);
             var message = JsonSerializer.Serialize(order);
             await notify.Handle("tp-new-orders", message);
 

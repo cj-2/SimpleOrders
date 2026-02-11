@@ -3,6 +3,21 @@
     image: apache/kafka:latest
     ports:
       - 9092:9092
+    environment:
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://broker:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,HOST:PLAINTEXT,DOCKER:PLAINTEXT
+      
+      # Settings required for KRaft mode
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+
+      # Listener to use for broker-to-broker communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # Configuração necessária quando temos só um node.
+
   notify:
     image: notify
     build:
@@ -11,7 +26,8 @@
     depends_on:
       - broker
     environment:
-      - Kafka__BootstrapServer=broker:29092
+      - "Kafka__BootstrapServer=broker:9093"
+      - ASPNETCORE_ENVIRONMENT=Development
   api:
     image: api
     build:
@@ -22,5 +38,5 @@
     depends_on:
       - broker
     environment:
-      - Kafka__BootstrapServer=broker:29092
+      - "Kafka__BootstrapServer=broker:9093"
       - ASPNETCORE_ENVIRONMENT=Development

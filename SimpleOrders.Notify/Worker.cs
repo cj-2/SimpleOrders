@@ -12,7 +12,7 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration) : Back
         {
             if (logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                logger.LogInformation("Worker iniciado em: {time}", DateTimeOffset.Now);
             }
 
             var config = new ConsumerConfig

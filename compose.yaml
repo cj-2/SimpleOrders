@@ -17,7 +17,15 @@
       # Listener to use for broker-to-broker communication
       KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # Configuração necessária quando temos só um node.
-
+  rabbit:
+    image: rabbitmq:management
+    ports:
+      - 15672:15672
+      - 5672:5672
+#    environment:
+#      RABBITMQ_DEFAULT_USER: user
+#      RABBITMQ_DEFAULT_PASS: password
+      
   notify:
     image: notify
     build:
@@ -39,4 +47,5 @@
       - broker
     environment:
       - "Kafka__BootstrapServer=broker:9093"
+      - "RabbitMQ__HostName=rabbit"
       - ASPNETCORE_ENVIRONMENT=Development

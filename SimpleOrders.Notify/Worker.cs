@@ -20,27 +20,43 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration) : Back
                 BootstrapServers = configuration["Kafka:BootstrapServer"],
                 GroupId = "gp-notify",
                 EnableAutoCommit = false,
-                AutoOffsetReset = AutoOffsetReset.Latest
+                AutoOffsetReset = AutoOffsetReset.Earliest
             };
 
             using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-            
+
             try
             {
-                consumer.Subscribe("tp-new-orders");
+                consumer.Subscribe("tp-create-orders");
 
                 while (true)
                 {
                     try
                     {
+                        logger.LogInformation("Iniciando consumo: tp-create-orders");
                         var result = consumer.Consume(stoppingToken);
                         var order = JsonSerializer.Deserialize<Order>(result.Message.Value);
-                        logger.LogInformation($"Enviando email: {order?.BuyerEmail}");
+
+                        logger.LogInformation($"To: {order?.BuyerEmail} " +
+                                              $"Mensagem: " +
+                                              $"Olá {order.Buyer}, acabamos de receber seu pedido, " +
+                                              $"e já estamos preparando seu {order.Products[0]} e outros itens do pedido!");
+
                         consumer.Commit(result);
+                    }
+                    catch (ConsumeException err)
+                    {
+                        if (err.Error.Code == ErrorCode.UnknownTopicOrPart)
+                            throw;
+
+                        logger.LogError($"ConsumeException: {err.Message}");
+                        logger.LogInformation("O processo será reiniciado em 5 segundos.");
+                        Thread.Sleep(5000);
                     }
                     catch (Exception err)
                     {
                         logger.LogError($"Message: {err.Message}");
+                        logger.LogInformation("O processo será reiniciado em 5 segundos.");
                         Thread.Sleep(5000);
                     }
                 }
@@ -49,6 +65,7 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration) : Back
             {
                 consumer.Close();
                 logger.LogError($"Subscribe: {err.Message}");
+                logger.LogInformation("O processo será reiniciado em 10 segundos.");
                 Thread.Sleep(10000);
             }
         }

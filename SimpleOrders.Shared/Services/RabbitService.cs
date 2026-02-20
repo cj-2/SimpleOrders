@@ -1,23 +1,19 @@
 ﻿using System.Text;
 using RabbitMQ.Client;
-using SimpleOrders.Shared;
 
-namespace SimpleOrders.Api.Services;
+namespace SimpleOrders.Shared.Services;
 
 public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
 {
-    private ConnectionFactory Factory { get; } = new()
-    {
-        HostName = rabbitMqConfig.HostName,
-    };
-
+    private ConnectionFactory? ConnectionFactory { get; set; }
     private IConnection? Connection { get; set; }
-    private IChannel? Channel { get; set; }
+    public IChannel? Channel { get; set; }
     private List<string> Queues { get; } = [];
 
-    private async Task Configure(string[] queues)
+    public async Task Configure()
     {
-        Connection ??= await Factory.CreateConnectionAsync();
+        ConnectionFactory ??= new ConnectionFactory { HostName = rabbitMqConfig.HostName };
+        Connection ??= await ConnectionFactory.CreateConnectionAsync();
         Channel ??= await Connection.CreateChannelAsync();
 
         if (Queues.Count <= 0)
@@ -40,7 +36,7 @@ public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
     public async Task Publish(string key, string message, string exchange = "")
     {
         if (Channel is null || Connection is null)
-            await Configure([key]);
+            await Configure();
 
         if (!Queues.Contains(key))
             throw new Exception("Informe uma fila válida.");

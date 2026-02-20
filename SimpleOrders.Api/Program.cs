@@ -5,6 +5,7 @@ using SimpleOrders.Api.Dtos;
 using SimpleOrders.Api.Services;
 using SimpleOrders.Shared;
 using SimpleOrders.Shared.Entities;
+using SimpleOrders.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,7 @@ app.UseHttpsRedirection();
 Console.WriteLine(app.Configuration["RabbitMQ:HostName"]);
 
 
-app.MapPost("/order", async (NotifyService notify, CreateOrderDto dto) =>
+app.MapPost("/order", async (NotifyService notify, CreateOrderDto dto, IConfiguration c) =>
     {
         try
         {

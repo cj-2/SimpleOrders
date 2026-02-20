@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Confluent.Kafka;
 using SimpleOrders.Shared.Entities;
+using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.Notify;
 
@@ -8,66 +9,73 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration) : Back
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
+
+        try
         {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Worker iniciado em: {time}", DateTimeOffset.Now);
-            }
-
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = configuration["Kafka:BootstrapServer"],
-                GroupId = "gp-notify",
-                EnableAutoCommit = false,
-                AutoOffsetReset = AutoOffsetReset.Earliest
-            };
-
-            using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
+            using var kafka = new KafkaService(configuration);
+            await kafka.Configure();
+            using var consumer = kafka.CreateConsume<Ignore, string>("gp-notify", "Earliest");
+            consumer.Subscribe("tp-create-orders");
 
             try
             {
-                consumer.Subscribe("tp-create-orders");
-
-                while (true)
+                while (!stoppingToken.IsCancellationRequested)
                 {
                     try
                     {
-                        logger.LogInformation("Iniciando consumo: tp-create-orders");
+                        logger.LogInformation("### => Iniciando consumo: tp-create-orders em: {tine}",
+                            DateTimeOffset.Now);
+
                         var result = consumer.Consume(stoppingToken);
                         var order = JsonSerializer.Deserialize<Order>(result.Message.Value);
 
-                        logger.LogInformation($"To: {order?.BuyerEmail} " +
+                        logger.LogInformation($"### => To: {order?.BuyerEmail} " +
                                               $"Mensagem: " +
                                               $"Olá {order.Buyer}, acabamos de receber seu pedido, " +
-                                              $"e já estamos preparando seu {order.Products[0]} e outros itens do pedido!");
+                                              $"e já estamos preparando seu {order.Products[0]} " +
+                                              $"e outros itens do pedido!");
 
                         consumer.Commit(result);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (ConsumeException err)
                     {
                         if (err.Error.Code == ErrorCode.UnknownTopicOrPart)
                             throw;
 
-                        logger.LogError($"ConsumeException: {err.Message}");
-                        logger.LogInformation("O processo será reiniciado em 5 segundos.");
+                        logger.LogError($"### => Consumo: {err.Message}");
+                        logger.LogInformation("### => O processo será reiniciado em 5 segundos.");
                         Thread.Sleep(5000);
                     }
                     catch (Exception err)
                     {
-                        logger.LogError($"Message: {err.Message}");
-                        logger.LogInformation("O processo será reiniciado em 5 segundos.");
+                        logger.LogError($"### => Consumo (Geral): {err.Message}");
+                        logger.LogInformation("### => O processo será reiniciado em 5 segundos.");
                         Thread.Sleep(5000);
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                consumer.Close();
+                throw;
+            }
             catch (Exception err)
             {
                 consumer.Close();
-                logger.LogError($"Subscribe: {err.Message}");
-                logger.LogInformation("O processo será reiniciado em 10 segundos.");
+                logger.LogError($"### => Inscrição: {err.Message}");
+                logger.LogInformation("### => O processo será reiniciado em 10 segundos.");
                 Thread.Sleep(10000);
             }
+        }
+        catch (Exception err)
+        {
+            logger.LogError($"### => Geral: {err.Message}");
+            throw;
         }
     }
 }

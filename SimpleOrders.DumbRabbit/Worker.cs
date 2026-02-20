@@ -1,22 +1,43 @@
+using System.Text;
+using System.Text.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using SimpleOrders.Shared;
+using SimpleOrders.Shared.Entities;
+using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.DumbRabbit;
 
-public class Worker(ILogger<Worker> logger, RabbitMqConfig rabbitMqConfig) : BackgroundService
+public class Worker(ILogger<Worker> logger, RabbitService rabbitService) : BackgroundService
 {
-    
-    private ConnectionFactory Factory { get; } = new()
-    {
-        HostName = rabbitMqConfig.HostName,
-    };
-
-    private IConnection? Connection { get; set; }
-    private IChannel? Channel { get; set; }
-    private List<string> Queues { get; } = [];
-    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        stoppingToken.ThrowIfCancellationRequested();
+        logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
+
+        try
+        {
+            await rabbitService.Configure();
+            var consumer = new AsyncEventingBasicConsumer(rabbitService.Channel!);
+
+            consumer.ReceivedAsync += async (model, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+                logger.LogInformation($"### => {message}");
+                
+                // Regras de negócio
+                // var order = JsonSerializer.Deserialize<Order>(message);
+                // ...
+                
+                await rabbitService.Channel!.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+            };
+
+            await rabbitService.Channel!.BasicConsumeAsync("create.orders", false, consumer, stoppingToken);
+        }
+        catch (Exception err)
+        {
+            logger.LogError(err.GetType().ToString());
+            logger.LogError($"### => Geral: {err.Message}");
+        }
     }
 }

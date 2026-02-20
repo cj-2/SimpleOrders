@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+﻿using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.Api.Services;
 

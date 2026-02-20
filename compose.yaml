@@ -34,7 +34,7 @@
       - broker
     environment:
       - "Kafka__BootstrapServer=broker:9093"
-      - ASPNETCORE_ENVIRONMENT=Development
+      - "DOTNET_ENVIRONMENT=Development"
   dumb-rabbit:
     image: dumb-rabbit
     build:
@@ -44,7 +44,8 @@
       - rabbit
     environment:
       - "RabbitMQ__HostName=rabbit"
-      - ASPNETCORE_ENVIRONMENT=Development
+      - "DOTNET_ENVIRONMENT=Development"
+    restart: unless-stopped
   api:
     image: api
     build:
@@ -57,4 +58,4 @@
     environment:
       - "Kafka__BootstrapServer=broker:9093"
       - "RabbitMQ__HostName=rabbit"
-      - ASPNETCORE_ENVIRONMENT=Development
+      - "ASPNETCORE_ENVIRONMENT=Development"

@@ -1,5 +1,7 @@
 ﻿using System.Text;
+using System.Text.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 namespace SimpleOrders.Shared.Services;
 
@@ -13,23 +15,35 @@ public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
     public async Task Configure()
     {
         ConnectionFactory ??= new ConnectionFactory { HostName = rabbitMqConfig.HostName };
-        Connection ??= await ConnectionFactory.CreateConnectionAsync();
-        Channel ??= await Connection.CreateChannelAsync();
 
-        if (Queues.Count <= 0)
+        while (true)
         {
-            foreach (var queue in rabbitMqConfig.Queues.Where(queue => !Queues.Contains(queue.Name)))
+            try
             {
-                await Channel.QueueDeclareAsync(
-                    queue: queue.Name,
-                    durable: queue.Durable,
-                    exclusive: queue.Exclusive,
-                    autoDelete: queue.AutoDelete,
-                    arguments: null
-                );
-
-                Queues.Add(queue.Name);
+                Connection ??= await ConnectionFactory.CreateConnectionAsync();
+                Console.WriteLine("RabbitMQ: Conexão feita.");
+                break;
             }
+            catch (BrokerUnreachableException err)
+            {
+                Console.WriteLine("RabbitMQ: Erro conexão, re-tentativa em 1 segundo.");
+                Thread.Sleep(1000);
+            }
+        }
+        
+        Channel ??= await Connection.CreateChannelAsync();
+        
+        foreach (var queue in rabbitMqConfig.Queues.Where(queue => !Queues.Contains(queue.Name)))
+        {
+            await Channel.QueueDeclareAsync(
+                queue: queue.Name,
+                durable: queue.Durable,
+                exclusive: queue.Exclusive,
+                autoDelete: queue.AutoDelete,
+                arguments: null
+            );
+
+            Queues.Add(queue.Name);
         }
     }
 

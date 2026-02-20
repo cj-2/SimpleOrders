@@ -24,11 +24,11 @@ public class Worker(ILogger<Worker> logger, RabbitService rabbitService) : Backg
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 logger.LogInformation($"### => {message}");
-                
+
                 // Regras de negócio
                 // var order = JsonSerializer.Deserialize<Order>(message);
                 // ...
-                
+
                 await rabbitService.Channel!.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
             };
 
@@ -38,6 +38,7 @@ public class Worker(ILogger<Worker> logger, RabbitService rabbitService) : Backg
         {
             logger.LogError(err.GetType().ToString());
             logger.LogError($"### => Geral: {err.Message}");
+            throw;
         }
     }
 }

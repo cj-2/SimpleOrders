@@ -22,9 +22,6 @@
     ports:
       - 15672:15672
       - 5672:5672
-#    environment:
-#      RABBITMQ_DEFAULT_USER: user
-#      RABBITMQ_DEFAULT_PASS: password 
   notify:
     image: notify
     build:
@@ -35,6 +32,7 @@
     environment:
       - "Kafka__BootstrapServer=broker:9093"
       - "DOTNET_ENVIRONMENT=Development"
+    restart: unless-stopped
   dumb-rabbit:
     image: dumb-rabbit
     build:

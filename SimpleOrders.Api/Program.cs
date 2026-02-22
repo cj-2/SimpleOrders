@@ -13,6 +13,8 @@ builder.Services.AddOpenApi();
 
 builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<RabbitMqConfig>>().Value);
+builder.Services.Configure<KafkaConfig>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<KafkaConfig>>().Value);
 
 builder.Services.AddSingleton<KafkaService>();
 builder.Services.AddSingleton<RabbitService>();

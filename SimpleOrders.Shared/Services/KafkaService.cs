@@ -1,38 +1,55 @@
 ﻿using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using Microsoft.Extensions.Configuration;
 
 namespace SimpleOrders.Shared.Services;
 
-public class KafkaService(IConfiguration configuration) : IDisposable
+public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
 {
+    private AdminClientConfig? AdminClientConfig { get; set; }
+    private ProducerConfig? ProducerConfig { get; set; }
     private IProducer<Null, string>? NotifyProducer { get; set; }
     private List<string> Topics { get; } = [];
 
     public async Task Configure()
     {
-        var config = new ProducerConfig
+        ProducerConfig = new ProducerConfig
         {
-            BootstrapServers = configuration["Kafka:BootstrapServer"]
+            BootstrapServers = kafkaConfig.BootstrapServer
         };
 
-        NotifyProducer = new ProducerBuilder<Null, string>(config).Build();
-        // Aqui fiz manual, mas poderia estar nas configurações.
-        await HandleTopic("tp-create-orders");
+        NotifyProducer = new ProducerBuilder<Null, string>(ProducerConfig).Build();
+
+        try
+        {
+            AdminClientConfig = new AdminClientConfig
+            {
+                BootstrapServers = kafkaConfig.BootstrapServer
+            };
+
+            using var adminClient = new AdminClientBuilder(AdminClientConfig).Build();
+
+            foreach (var topic in kafkaConfig.Topics)
+            {
+                if (Topics.Contains(topic.Name)) continue;
+
+                await adminClient.CreateTopicsAsync([new TopicSpecification { Name = topic.Name }]);
+                Topics.Add(topic.Name);
+            }
+        }
+        catch (CreateTopicsException e)
+        {
+            Console.WriteLine(e.Message);
+        }
     }
 
     private async Task HandleTopic(string name)
     {
+        if (AdminClientConfig == null) await Configure();
         if (Topics.Contains(name)) return;
 
         try
         {
-            var adminClientConfig = new AdminClientConfig
-            {
-                BootstrapServers = configuration["Kafka:BootstrapServer"]
-            };
-
-            using var adminClient = new AdminClientBuilder(adminClientConfig).Build();
+            using var adminClient = new AdminClientBuilder(AdminClientConfig).Build();
             await adminClient.CreateTopicsAsync([new TopicSpecification { Name = name }]);
             Topics.Add(name);
         }
@@ -45,7 +62,6 @@ public class KafkaService(IConfiguration configuration) : IDisposable
     public async Task SendMessage(string topic, string message)
     {
         if (NotifyProducer == null) await Configure();
-        await HandleTopic(topic);
         await NotifyProducer!.ProduceAsync(topic, new Message<Null, string> { Value = message });
     }
 
@@ -53,7 +69,7 @@ public class KafkaService(IConfiguration configuration) : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = configuration["Kafka:BootstrapServer"],
+            BootstrapServers = kafkaConfig.BootstrapServer,
             GroupId = groupId,
             EnableAutoCommit = false,
             AutoOffsetReset = string.IsNullOrEmpty(autoOffsetReset)

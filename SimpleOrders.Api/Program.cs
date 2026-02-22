@@ -46,9 +46,9 @@ app.MapPost("/order", async (NotifyService notify, CreateOrderDto dto, IConfigur
         {
             return Results.BadRequest(err.Message);
         }
-
     })
-    .WithName("PostOrder");
+    .WithName("PostOrder")
+    .WithDescription("Essa requisição irá enviar uma mensagem para um tópico no Apache Kafka.");
 
 app.MapPost("/order-v2", async (RabbitService rabbit, CreateOrderDto dto) =>
     {
@@ -63,8 +63,8 @@ app.MapPost("/order-v2", async (RabbitService rabbit, CreateOrderDto dto) =>
         {
             return Results.BadRequest(err.Message);
         }
-
     })
-    .WithName("PostOrderV2");
+    .WithName("PostOrderV2")
+    .WithDescription("Essa requisição enviará uma mensagem para uma fila do RabbitMQ.");
 
 app.Run();

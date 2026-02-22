@@ -32,7 +32,7 @@ public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
             {
                 if (Topics.Contains(topic.Name)) continue;
 
-                await adminClient.CreateTopicsAsync([new TopicSpecification { Name = topic.Name }]);
+                await adminClient.CreateTopicsAsync([new TopicSpecification { Name = topic.Name, NumPartitions = 3 }]);
                 Topics.Add(topic.Name);
             }
         }

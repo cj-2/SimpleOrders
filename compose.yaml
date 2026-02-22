@@ -33,6 +33,7 @@
       - "Kafka__BootstrapServer=broker:9093"
       - "DOTNET_ENVIRONMENT=Development"
     restart: unless-stopped
+    scale: 3
   dumb-rabbit:
     image: dumb-rabbit
     build:
@@ -44,6 +45,7 @@
       - "RabbitMQ__HostName=rabbit"
       - "DOTNET_ENVIRONMENT=Development"
     restart: unless-stopped
+    scale: 3
   api:
     image: api
     build:

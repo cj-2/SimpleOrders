@@ -22,7 +22,7 @@ public class Exchange
 }
 
 
-public class RabbitMqConfig
+public class RabbitMqSettings
 {
     public string HostName { get; set; } = string.Empty;
     public List<Queue> Queues { get; set; } = [];

@@ -3,7 +3,7 @@ using Confluent.Kafka.Admin;
 
 namespace SimpleOrders.Shared.Services;
 
-public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
+public class KafkaService(KafkaSettings kafkaSettings) : IDisposable
 {
     private AdminClientConfig? AdminClientConfig { get; set; }
     private ProducerConfig? ProducerConfig { get; set; }
@@ -14,7 +14,7 @@ public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
     {
         ProducerConfig = new ProducerConfig
         {
-            BootstrapServers = kafkaConfig.BootstrapServer
+            BootstrapServers = kafkaSettings.BootstrapServer
         };
 
         NotifyProducer = new ProducerBuilder<Null, string>(ProducerConfig).Build();
@@ -23,12 +23,12 @@ public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
         {
             AdminClientConfig = new AdminClientConfig
             {
-                BootstrapServers = kafkaConfig.BootstrapServer
+                BootstrapServers = kafkaSettings.BootstrapServer
             };
 
             using var adminClient = new AdminClientBuilder(AdminClientConfig).Build();
 
-            foreach (var topic in kafkaConfig.Topics)
+            foreach (var topic in kafkaSettings.Topics)
             {
                 if (Topics.Contains(topic.Name)) continue;
 
@@ -69,7 +69,7 @@ public class KafkaService(KafkaConfig kafkaConfig) : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = kafkaConfig.BootstrapServer,
+            BootstrapServers = kafkaSettings.BootstrapServer,
             GroupId = groupId,
             EnableAutoCommit = false,
             AutoOffsetReset = string.IsNullOrEmpty(autoOffsetReset)

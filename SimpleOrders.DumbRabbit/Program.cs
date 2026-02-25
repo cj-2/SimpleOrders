@@ -5,8 +5,8 @@ using SimpleOrders.Shared.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("RabbitMQ"));
-builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<RabbitMqConfig>>().Value);
+builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<RabbitMqSettings>>().Value);
 builder.Services.AddSingleton<RabbitService>();
 
 builder.Services.AddHostedService<OrdersWorker>();

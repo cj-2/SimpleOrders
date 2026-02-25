@@ -5,7 +5,7 @@ using RabbitMQ.Client.Exceptions;
 
 namespace SimpleOrders.Shared.Services;
 
-public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
+public class RabbitService(RabbitMqSettings rabbitMqSettings) : IDisposable
 {
     private ConnectionFactory? ConnectionFactory { get; set; }
     private IConnection? Connection { get; set; }
@@ -15,7 +15,7 @@ public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
 
     public async Task Configure(CancellationToken stoppingToken = new())
     {
-        ConnectionFactory ??= new ConnectionFactory { HostName = rabbitMqConfig.HostName };
+        ConnectionFactory ??= new ConnectionFactory { HostName = rabbitMqSettings.HostName };
 
         while (true)
         {
@@ -34,7 +34,7 @@ public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
 
         Channel ??= await Connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        foreach (var exchange in rabbitMqConfig.Exchanges.Where(exchange => !Exchanges.Contains(exchange.Name)))
+        foreach (var exchange in rabbitMqSettings.Exchanges.Where(exchange => !Exchanges.Contains(exchange.Name)))
         {
             await Channel.ExchangeDeclareAsync(exchange.Name, exchange.Type, true,
                 cancellationToken: stoppingToken);
@@ -42,7 +42,7 @@ public class RabbitService(RabbitMqConfig rabbitMqConfig) : IDisposable
             Queues.Add(exchange.Name);
         }
 
-        foreach (var queue in rabbitMqConfig.Queues.Where(queue => !Queues.Contains(queue.Name)))
+        foreach (var queue in rabbitMqSettings.Queues.Where(queue => !Queues.Contains(queue.Name)))
         {
             await Channel.QueueDeclareAsync(
                 queue: queue.Name,

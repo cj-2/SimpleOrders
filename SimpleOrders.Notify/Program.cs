@@ -4,8 +4,8 @@ using SimpleOrders.Shared;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.Configure<KafkaConfig>(builder.Configuration.GetSection("Kafka"));
-builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<KafkaConfig>>().Value);
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<KafkaSettings>>().Value);
 
 builder.Services.AddHostedService<Worker>();
 

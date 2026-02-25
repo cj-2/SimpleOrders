@@ -6,7 +6,7 @@ using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.Notify;
 
-public class Worker(ILogger<Worker> logger, KafkaConfig kafkaConfig) : BackgroundService
+public class Worker(ILogger<Worker> logger, KafkaSettings kafkaSettings) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -14,7 +14,7 @@ public class Worker(ILogger<Worker> logger, KafkaConfig kafkaConfig) : Backgroun
 
         try
         {
-            using var kafka = new KafkaService(kafkaConfig);
+            using var kafka = new KafkaService(kafkaSettings);
             await kafka.Configure();
             using var consumer = kafka.CreateConsume<Ignore, string>("gp-notify", "Earliest");
             consumer.Subscribe("tp-create-orders");

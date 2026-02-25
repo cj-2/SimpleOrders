@@ -9,7 +9,7 @@ builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("Rab
 builder.Services.AddSingleton(p => p.GetRequiredService<IOptions<RabbitMqConfig>>().Value);
 builder.Services.AddSingleton<RabbitService>();
 
-builder.Services.AddHostedService<Worker>();
-
+builder.Services.AddHostedService<OrdersWorker>();
+builder.Services.AddHostedService<HelloWorker>();
 var host = builder.Build();
 host.Run();

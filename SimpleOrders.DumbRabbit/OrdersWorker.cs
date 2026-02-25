@@ -1,14 +1,11 @@
 using System.Text;
-using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using SimpleOrders.Shared;
-using SimpleOrders.Shared.Entities;
 using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.DumbRabbit;
 
-public class Worker(ILogger<Worker> logger, RabbitService rabbitService) : BackgroundService
+public class OrdersWorker(ILogger<OrdersWorker> logger, RabbitService rabbitService) : BackgroundService
 {
     private async Task HandleWithEvents(BasicDeliverEventArgs eventArgs, object model, CancellationToken stoppingToken)
     {

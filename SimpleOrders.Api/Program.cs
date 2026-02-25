@@ -54,7 +54,7 @@ app.MapPost("/r/hello", async (RabbitService rabbit) =>
     {
         try
         {
-            await rabbit.Publish("general.first.contact", "Hello!");
+            await rabbit.Publish("general.first.contact", DateTimeOffset.Now.ToString());
             return Results.Ok();
         }
         catch (Exception err)

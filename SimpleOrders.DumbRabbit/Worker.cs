@@ -10,29 +10,70 @@ namespace SimpleOrders.DumbRabbit;
 
 public class Worker(ILogger<Worker> logger, RabbitService rabbitService) : BackgroundService
 {
+    private async Task HandleWithEvents(BasicDeliverEventArgs eventArgs, object model, CancellationToken stoppingToken)
+    {
+        if (eventArgs.RoutingKey == "create.orders")
+            await HandleWithCreateOrders(eventArgs, stoppingToken);
+        else if (eventArgs.RoutingKey == "update.orders")
+            await HandleWithUpdateOrders(eventArgs, stoppingToken);
+    }
+
+    private async Task HandleWithCreateOrders(BasicDeliverEventArgs eventArgs, CancellationToken stoppingToken)
+    {
+        try
+        {
+            var body = eventArgs.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            logger.LogInformation($"### create.orders => {message}");
+
+            // Regras de negócio
+            // var order = JsonSerializer.Deserialize<Order>(message);
+            // ...
+
+            await rabbitService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
+        }
+        catch
+        {
+            await rabbitService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
+        }
+    }
+
+    private async Task HandleWithUpdateOrders(BasicDeliverEventArgs eventArgs, CancellationToken stoppingToken)
+    {
+        try
+        {
+            var body = eventArgs.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            logger.LogInformation($"### update.orders => {message}");
+
+            // Regras de negócio
+            // var order = JsonSerializer.Deserialize<Order>(message);
+            // ...
+
+            await rabbitService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
+        }
+        catch
+        {
+            await rabbitService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
+        }
+    }
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
 
         try
         {
-            await rabbitService.Configure();
+            await rabbitService.Configure(stoppingToken);
             var consumer = new AsyncEventingBasicConsumer(rabbitService.Channel!);
 
-            consumer.ReceivedAsync += async (model, ea) =>
+            consumer.ReceivedAsync += async (model, eventArgs) =>
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                logger.LogInformation($"### => {message}");
-
-                // Regras de negócio
-                // var order = JsonSerializer.Deserialize<Order>(message);
-                // ...
-
-                await rabbitService.Channel!.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
+                await HandleWithEvents(eventArgs, model, stoppingToken);
             };
 
             await rabbitService.Channel!.BasicConsumeAsync("create.orders", false, consumer, stoppingToken);
+            await rabbitService.Channel!.BasicConsumeAsync("update.orders", false, consumer, stoppingToken);
         }
         catch (Exception err)
         {

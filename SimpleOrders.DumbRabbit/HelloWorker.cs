@@ -5,31 +5,37 @@ using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.DumbRabbit;
 
-public class HelloWorker(ILogger<HelloWorker> logger, RabbitService rabbitService) : BackgroundService
+public class HelloWorker(ILogger<HelloWorker> logger, RabbitMqService rabbitMqService) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
+        logger.LogInformation($"### => {DateTimeOffset.Now} - Worker em execução.");
 
         try
         {
-            await rabbitService.Configure(stoppingToken);
-            var consumer = new AsyncEventingBasicConsumer(rabbitService.Channel!);
+            logger.LogInformation($"### => {DateTimeOffset.Now} - Aguardando configuração do RabbitMQ.");
+            while (rabbitMqService.Channel == null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+            }
+
+            var consumer = new AsyncEventingBasicConsumer(rabbitMqService.Channel!);
 
             consumer.ReceivedAsync += async (model, eventArgs) =>
             {
                 var body = eventArgs.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 logger.LogInformation($"### hello => {message}");
-                await rabbitService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
+                await rabbitMqService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, cancellationToken);
             };
 
-            await rabbitService.Channel!.BasicConsumeAsync("general.first.contact", false, consumer, stoppingToken);
+            await rabbitMqService.Channel!.BasicConsumeAsync("general.first.contact", false, consumer, cancellationToken);
         }
         catch (Exception err)
         {
-            logger.LogError(err.GetType().ToString());
-            logger.LogError($"### => Geral: {err.Message}");
+            // logger.LogError(err.GetType().ToString());
+            logger.LogError($"### => {DateTimeOffset.Now} - Geral: {err.Message}");
             throw;
         }
     }

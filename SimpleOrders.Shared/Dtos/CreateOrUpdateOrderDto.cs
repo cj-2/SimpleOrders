@@ -1,6 +1,6 @@
-﻿namespace SimpleOrders.Api.Dtos;
+﻿namespace SimpleOrders.Shared.Dtos;
 
-public record CreateOrderDto
+public record CreateOrUpdateOrderDto
 {
     public string Buyer { get; set; }
     public string BuyerEmail { get; set; }

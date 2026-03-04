@@ -8,14 +8,13 @@ namespace SimpleOrders.Notify;
 
 public class Worker(ILogger<Worker> logger, KafkaSettings kafkaSettings) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
 
         try
         {
-            using var kafka = new KafkaService(kafkaSettings);
-            await kafka.Configure();
+            using var kafka = new KafkaService(kafkaSettings, cancellationToken);
             using var consumer = kafka.CreateConsume<Ignore, string>("gp-notify", "Earliest");
             consumer.Subscribe("tp-create-orders");
 
@@ -23,11 +22,11 @@ public class Worker(ILogger<Worker> logger, KafkaSettings kafkaSettings) : Backg
             {
                 logger.LogInformation("### => Iniciando consumo: tp-create-orders em: {tine}", DateTimeOffset.Now);
 
-                while (!stoppingToken.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
-                        var result = consumer.Consume(stoppingToken);
+                        var result = consumer.Consume(cancellationToken);
                         logger.LogInformation($"### => {result.Message.Value}");
 
                         // O que deve ser feito...

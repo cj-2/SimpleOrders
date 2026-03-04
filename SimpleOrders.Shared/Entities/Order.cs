@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using SimpleOrders.Shared.Dtos;
 
 namespace SimpleOrders.Shared.Entities;
 
@@ -18,8 +19,8 @@ public class Order
         Validade(buyer, products, buyerEmail);
 
         Buyer = buyer;
-        Products = products;
         BuyerEmail = buyerEmail;
+        Products = products;
     }
 
     [JsonConstructor]
@@ -32,15 +33,15 @@ public class Order
 
         Id = id;
         Buyer = buyer;
-        Products = products;
         BuyerEmail = buyerEmail;
+        Products = products;
     }
 
     private static void Validade(string? buyer, string[]? products, string? buyerEmail)
     {
         if (string.IsNullOrEmpty(buyer))
             throw new Exception("buyer é obrigatório.");
-        
+
         if (string.IsNullOrEmpty(buyerEmail))
             throw new Exception("buyerEmail é obrigatório.");
 
@@ -49,5 +50,12 @@ public class Order
 
         if (products == null || products.Length == 0)
             throw new Exception("products não pode ser vazio.");
+    }
+
+    public void UpdateFromDto(CreateOrUpdateOrderDto dto)
+    {
+        Buyer = dto.Buyer;
+        BuyerEmail = dto.BuyerEmail;
+        Products = dto.Products;
     }
 }

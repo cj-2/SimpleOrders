@@ -5,7 +5,7 @@ using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.DumbRabbit;
 
-public class OrdersWorker(ILogger<OrdersWorker> logger, RabbitService rabbitService) : BackgroundService
+public class OrdersWorker(ILogger<OrdersWorker> logger, RabbitMqService rabbitMqService) : BackgroundService
 {
     private async Task HandleWithEvents(BasicDeliverEventArgs eventArgs, object model, CancellationToken stoppingToken)
     {
@@ -21,17 +21,17 @@ public class OrdersWorker(ILogger<OrdersWorker> logger, RabbitService rabbitServ
         {
             var body = eventArgs.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            logger.LogInformation($"### create.orders => {message}");
+            logger.LogInformation($"### => {DateTimeOffset.Now} - create.orders => {message}");
 
             // Regras de negócio
             // var order = JsonSerializer.Deserialize<Order>(message);
             // ...
 
-            await rabbitService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
+            await rabbitMqService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
         }
         catch
         {
-            await rabbitService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
+            await rabbitMqService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
         }
     }
 
@@ -41,41 +41,47 @@ public class OrdersWorker(ILogger<OrdersWorker> logger, RabbitService rabbitServ
         {
             var body = eventArgs.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            logger.LogInformation($"### update.orders => {message}");
+            logger.LogInformation($"### => {DateTimeOffset.Now} - update.orders => {message}");
 
             // Regras de negócio
             // var order = JsonSerializer.Deserialize<Order>(message);
             // ...
 
-            await rabbitService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
+            await rabbitMqService.Channel!.BasicAckAsync(eventArgs.DeliveryTag, false, stoppingToken);
         }
         catch
         {
-            await rabbitService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
+            await rabbitMqService.Channel!.BasicNackAsync(eventArgs.DeliveryTag, false, true, stoppingToken);
         }
     }
-    
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("### => Worker executado em: {time}", DateTimeOffset.Now);
+        logger.LogInformation($"### => {DateTimeOffset.Now} - Worker em execução.");
 
         try
         {
-            await rabbitService.Configure(stoppingToken);
-            var consumer = new AsyncEventingBasicConsumer(rabbitService.Channel!);
+            logger.LogInformation($"### => {DateTimeOffset.Now} - Aguardando configuração do RabbitMQ.");
+            while (rabbitMqService.Channel == null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+            }
+
+            var consumer = new AsyncEventingBasicConsumer(rabbitMqService.Channel!);
 
             consumer.ReceivedAsync += async (model, eventArgs) =>
             {
-                await HandleWithEvents(eventArgs, model, stoppingToken);
+                await HandleWithEvents(eventArgs, model, cancellationToken);
             };
 
-            await rabbitService.Channel!.BasicConsumeAsync("create.orders", false, consumer, stoppingToken);
-            await rabbitService.Channel!.BasicConsumeAsync("update.orders", false, consumer, stoppingToken);
+            await rabbitMqService.Channel!.BasicConsumeAsync("create.orders", false, consumer, cancellationToken);
+            await rabbitMqService.Channel!.BasicConsumeAsync("update.orders", false, consumer, cancellationToken);
         }
         catch (Exception err)
         {
-            logger.LogError(err.GetType().ToString());
-            logger.LogError($"### => Geral: {err.Message}");
+            // logger.LogError(err.GetType().ToString());
+            logger.LogError($"### => {DateTimeOffset.Now} - {err.Message}");
             throw;
         }
     }

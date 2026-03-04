@@ -1,4 +1,11 @@
 ﻿services:
+  raven:
+    image: ravendb/ravendb
+    ports:
+      - 8082:8080
+    environment:
+      - "RAVEN_Setup_Mode=None"
+      - "RAVEN_Security_UnsecuredAccessAllowed=PrivateNetwork"
   broker:
     image: apache/kafka:latest
     ports:
@@ -33,7 +40,7 @@
       - "Kafka__BootstrapServer=broker:9093"
       - "DOTNET_ENVIRONMENT=Development"
     restart: unless-stopped
-    scale: 3
+#    scale: 3
   dumb-rabbit:
     image: dumb-rabbit
     build:
@@ -45,7 +52,7 @@
       - "RabbitMQ__HostName=rabbit"
       - "DOTNET_ENVIRONMENT=Development"
     restart: unless-stopped
-    scale: 3
+#    scale: 3
   api:
     image: api
     build:
@@ -54,8 +61,10 @@
     ports:
       - 25104:8080
     depends_on:
+      - raven
       - broker
     environment:
       - "Kafka__BootstrapServer=broker:9093"
       - "RabbitMQ__HostName=rabbit"
+      - "RavenDB__Urls__0=http://raven:8080"
       - "ASPNETCORE_ENVIRONMENT=Development"

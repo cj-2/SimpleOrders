@@ -1,7 +1,5 @@
-using System.Text.Json;
 using Confluent.Kafka;
 using SimpleOrders.Shared;
-using SimpleOrders.Shared.Entities;
 using SimpleOrders.Shared.Services;
 
 namespace SimpleOrders.Notify;

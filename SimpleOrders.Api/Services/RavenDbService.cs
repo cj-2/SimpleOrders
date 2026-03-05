@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
-using Raven.Client.Documents;
+﻿using Raven.Client.Documents;
 using Raven.Client.Exceptions;
 using Raven.Client.ServerWide;
 using Raven.Client.ServerWide.Operations;
+using SimpleOrders.Shared;
 
-namespace SimpleOrders.Shared.Services;
+namespace SimpleOrders.Api.Services;
 
 public class RavenDbService : IDisposable
 {
